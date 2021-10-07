@@ -76,7 +76,7 @@ func (s *ORMSuite) TearDownTest() {
 }
 
 func (s *ORMSuite) checkVacuum(ignore map[string]bool) {
-	s.Require().NoError(s.tbl.Vacuum(s.cn))
+	s.Require().NoError(s.tbl.Vacuum(s.cn, 0))
 
 	// В базе ничего не должно оставаться
 	s.Require().NoError(s.cn.Read(func(r db.Reader) error {

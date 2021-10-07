@@ -58,5 +58,6 @@ func OnDelete(hdl RowHandler) Option  { return func(o *options) { o.onDelete = h
 func OnVacuum(hdl RowHandler) Option  { return func(o *options) { o.onVacuum = hdl } }
 func Exclusive(hdl RowHandler) Option { return func(o *options) { o.lock = true; o.onLock = hdl } }
 func SelectPack(size int) Option      { return func(o *options) { o.spack = uint64(size) } }
+func VacuumPack(size int) Option      { return func(o *options) { o.vpack = uint64(size) } }
 func MaxRowMem(size int) Option       { return func(o *options) { o.rowmem = size } }
 func MaxRowSize(size int) Option      { return func(o *options) { o.rowsize = size } }

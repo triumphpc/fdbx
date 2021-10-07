@@ -182,7 +182,7 @@ func (t *v1Table) onDelete(tx mvcc.Tx, _ db.Writer, pair fdb.KeyValue) (err erro
 	return nil
 }
 
-func (t *v1Table) Autovacuum(ctx context.Context, cn db.Connection, args ...Option) {
+func (t *v1Table) Autovacuum(ctx context.Context, cn db.Connection, vcPack int, args ...Option) {
 	var err error
 	var tbid [2]byte
 	var timer *time.Timer
@@ -199,7 +199,7 @@ func (t *v1Table) Autovacuum(ctx context.Context, cn db.Connection, args ...Opti
 			// И только если мы вообще можем еще запускать
 			if ctx.Err() == nil {
 				// Тогда стартуем заново и в s.wait ничего не ставим
-				go t.Autovacuum(ctx, cn)
+				go t.Autovacuum(ctx, cn, vcPack)
 				return
 			}
 		}
@@ -236,7 +236,7 @@ func (t *v1Table) Autovacuum(ctx context.Context, cn db.Connection, args ...Opti
 		case <-timer.C:
 			glog.Errorf("Run vacuum on %s", tkey)
 
-			if err = t.Vacuum(cn); err != nil {
+			if err = t.Vacuum(cn, vcPack); err != nil {
 				return
 			}
 
@@ -247,26 +247,31 @@ func (t *v1Table) Autovacuum(ctx context.Context, cn db.Connection, args ...Opti
 	}
 }
 
-func (t *v1Table) Vacuum(dbc db.Connection) error {
+func (t *v1Table) Vacuum(dbc db.Connection, vcPack int) error {
 	if exp := mvcc.WithTx(dbc, func(tx mvcc.Tx) (err error) {
 
 		// Этот запрос очищает только данные. Для них должен быть обработчик очистки BLOB
-		if err = tx.Vacuum(WrapTableKey(t.id, nil), mvcc.OnVacuum(t.onVacuum)); err != nil {
+		if err = tx.Vacuum(WrapTableKey(t.id, nil), []mvcc.Option{
+			mvcc.OnVacuum(t.onVacuum),
+			mvcc.VacuumPack(vcPack)}...); err != nil {
 			return
 		}
 
 		// Отдельно очистка всех индексов
-		if err = tx.Vacuum(fdbx.SkipRight(WrapIndexKey(t.id, 0, nil), 2)); err != nil {
+		if err = tx.Vacuum(fdbx.SkipRight(WrapIndexKey(t.id, 0, nil), 2),
+			mvcc.VacuumPack(vcPack)); err != nil {
 			return
 		}
 
 		// Отдельно очистка всех очередей
-		if err = tx.Vacuum(fdbx.SkipRight(WrapQueueKey(t.id, 0, nil, 0, nil), 3)); err != nil {
+		if err = tx.Vacuum(fdbx.SkipRight(WrapQueueKey(t.id, 0, nil, 0, nil), 3),
+			mvcc.VacuumPack(vcPack)); err != nil {
 			return
 		}
 
 		// Отдельно очистка всех курсоров
-		if err = tx.Vacuum(WrapQueryKey(t.id, nil)); err != nil {
+		if err = tx.Vacuum(WrapQueryKey(t.id, nil),
+			mvcc.VacuumPack(vcPack)); err != nil {
 			return
 		}
 

@@ -29,8 +29,8 @@ type Table interface {
 	Upsert(mvcc.Tx, ...fdb.KeyValue) error
 	Insert(mvcc.Tx, ...fdb.KeyValue) error
 
-	Vacuum(db.Connection) error
-	Autovacuum(context.Context, db.Connection, ...Option)
+	Vacuum(db.Connection, int) error
+	Autovacuum(context.Context, db.Connection, int, ...Option)
 }
 
 // Queue - универсальный интерфейс очередей, для работы с задачами
