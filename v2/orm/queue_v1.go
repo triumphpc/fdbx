@@ -226,6 +226,10 @@ func (q v1Queue) SubList(ctx context.Context, cn db.Connection, pack int) (list 
 					}
 
 					refresh = when.Sub(time.Now())
+
+					if refresh > q.options.refresh {
+						refresh = q.options.refresh
+					}
 				} else {
 					// Если следующей задачи нет (очередь пуста), ставим таймаут из опций
 					refresh = q.options.refresh
