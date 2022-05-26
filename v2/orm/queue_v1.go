@@ -189,7 +189,7 @@ func (q v1Queue) SubList(ctx context.Context, cn db.Connection, pack int) (list 
 				mvcc.Last(q.wrapItemKey(time.Now(), nil)),
 				mvcc.From(from),
 				mvcc.Limit(pack),
-				mvcc.SelectPack(1000), // Задачи редко бывают большими
+				mvcc.SelectPack(500), // Задачи редко бывают большими
 				mvcc.Exclusive(q.onTaskWork),
 				mvcc.Writer(w),
 			); exp != nil {
